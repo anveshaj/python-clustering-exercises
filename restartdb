@@ -1,0 +1,485 @@
+import com.redwood.scheduler.api.model.report.Reporter;
+import com.redwood.scheduler.api.model.report.ReportDestination;
+import com.redwood.scheduler.api.model.Job;
+import com.redwood.scheduler.api.model.OperatorMessage;
+import com.redwood.scheduler.api.model.JobDefinition;
+import com.redwood.scheduler.api.model.JobFile;
+import com.redwood.scheduler.api.model.enumeration.JobStatus;
+import java.util.Iterator;
+import java.util.TimeZone;
+import com.redwood.scheduler.api.date.DateTimeZone;
+import com.redwood.scheduler.api.model.ProcessServer;
+import com.redwood.scheduler.api.model.enumeration.ProcessServerStatus;
+import com.redwood.scheduler.api.model.Queue;
+import com.redwood.scheduler.api.model.enumeration.QueueStatus;
+{
+jcsOut.println("Starting Pending Jobs");
+	String prows = "";
+	String pquery = "select Job.* from Job where Job.Status IN ('a','c','P','q,','V','I','Q','B') order by Job.ScheduledStartTime desc";
+		for (Iterator it = jcsSession.executeObjectQuery(pquery, null); it.hasNext();)
+		{
+			Job jobTemp = (Job) it.next();
+            if(jobTemp  != null){
+            	if (jobTemp.getParentJob()==null){
+				//String jobDescription = (String)jobTemp.getDescription();
+				String jobStatus = (String)jobTemp.getStatus().name();
+				String jobName = jobTemp.getJobDefinition().getName();
+				Long jobId=jobTemp.getJobId();
+            	DateTimeZone startTime = jobTemp.getScheduledStartTime();                
+				prows+="<tr>\n"//
+				+ "<td bordercolor=\"#0081C6\" scope=\"row\">"+jobName +"</td>"//
+                + "<td bordercolor=\"#0081C6\" scope=\"row\">"+jobId +"</td>"//		
+				+ "<td bordercolor=\"#0081C6\" scope=\"row\">"+jobStatus+"</td>";
+                   		if(startTime != null)
+                         {
+                         	startTime.setTimeZone( TimeZone.getTimeZone("CST6CDT") );
+                         	prows+="<td bordercolor=\"#0081C6\" scope=\"row\">"+startTime.toFormattedString("EEE dd MMM yyyy HH:mm")+"</td></tr>";
+                         }
+                        else
+                        {
+                        	prows+="<td bordercolor=\"#0081C6\" scope=\"row\">Never</td></tr>";
+                        }
+             }
+            }
+		}
+		if(prows.equals("")){
+			prows+="\n<tr><td colspan=\"4\">No jobs in pending status</td></tr>";
+		}
+jcsJob.getJobParameterByName("PROWS").setInValueString(prows);
+jcsOut.println("Ending pending jobs");
+
+jcsOut.println("Starting Active Jobs");
+	String arows = "";
+	String aquery = "select Job.* from Job where Job.Status IN ('R','W') order by Job.ScheduledStartTime desc";
+		for (Iterator it = jcsSession.executeObjectQuery(aquery, null); it.hasNext();)
+		{
+			Job jobTemp = (Job) it.next();
+            if(jobTemp  != null)
+            {
+            	if (jobTemp.getParentJob()==null)
+            	{
+				//String jobDescription = (String)jobTemp.getDescription();
+				String jobStatus = (String)jobTemp.getStatus().name();
+				String jobName = jobTemp.getJobDefinition().getName();
+				Long jobId = jobTemp.getJobId();
+                DateTimeZone startTime = jobTemp.getScheduledStartTime();
+				arows+="<tr>\n"//
+				+ "<td bordercolor=\"#0081C6\" scope=\"row\">"+jobName +"</td>"//
+				+ "<td bordercolor=\"#0081C6\" scope=\"row\">"+jobId +"</td>"//		
+				+ "<td bordercolor=\"#0081C6\" scope=\"row\">"+jobStatus+"</td>";
+                   		if(startTime != null)
+                         {
+                         	startTime.setTimeZone( TimeZone.getTimeZone("CST6CDT") );
+                         	arows+="<td bordercolor=\"#0081C6\" scope=\"row\">"+startTime.toFormattedString("EEE dd MMM yyyy HH:mm")+"</td></tr>";
+                         }
+                        else
+                        {
+                        	arows+="<td bordercolor=\"#0081C6\" scope=\"row\">Never</td></tr>";
+                        }
+              }
+            }
+		}
+		if(arows.equals("")){
+			arows+="\n<tr><td colspan=\"4\">No jobs in waiting or running status</td></tr>";
+		}
+jcsJob.getJobParameterByName("AROWS").setInValueString(arows);
+jcsOut.println("Ending Active Jobs");
+
+jcsOut.println("Starting Console Jobs");
+	String crows = "";
+	String cquery = "select Job.* from Job where Job.Status IN ('O') order by Job.ScheduledStartTime desc";
+		for (Iterator it = jcsSession.executeObjectQuery(cquery, null); it.hasNext();)
+		{
+			Job jobTemp = (Job) it.next();
+            if(jobTemp  != null){
+            	if (jobTemp.getParentJob()==null)
+            	{
+				//String jobDescription = (String)jobTemp.getDescription();
+				String jobStatus = (String)jobTemp.getStatus().name();
+				Long jobId = jobTemp.getJobId();
+				String jobName = jobTemp.getJobDefinition().getName();
+            	DateTimeZone startTime = jobTemp.getScheduledStartTime();
+				crows+="<tr>\n"//
+				+ "<td bordercolor=\"#0081C6\" scope=\"row\">"+jobName +"</td>"//
+				+ "<td bordercolor=\"#0081C6\" scope=\"row\">"+jobId +"</td>"//		
+				+ "<td bordercolor=\"#0081C6\" scope=\"row\">"+jobStatus+"</td>";
+                   		if(startTime != null)
+                         {
+                         	startTime.setTimeZone( TimeZone.getTimeZone("CST6CDT") );
+                         	crows+="<td bordercolor=\"#0081C6\" scope=\"row\">"+startTime.toFormattedString("EEE dd MMM yyyy HH:mm")+"</td></tr>";
+                         }
+                        else
+                        {
+                        	crows+="<td bordercolor=\"#0081C6\" scope=\"row\">Never</td></tr>";
+                        }
+            	}
+            }
+		}	
+		if(crows.equals("")){
+			crows+="\n<tr><td colspan=\"4\">No jobs in Console status</td></tr>";
+		}
+jcsJob.getJobParameterByName("CROWS").setInValueString(crows);
+jcsOut.println("Ending Console jobs");
+
+jcsOut.println("Starting Overdue Jobs");
+String orows = "";
+String oquery = "select Job.* from Job where Job.Status IN ('F') order by Job.ScheduledStartTime desc";
+	for (Iterator it = jcsSession.executeObjectQuery(oquery, null); it.hasNext();)
+	{
+		Job jobTemp = (Job) it.next();
+        if(jobTemp  != null){
+        	if (jobTemp.getParentJob()==null){
+			//String jobDescription = (String)jobTemp.getDescription();
+			String jobStatus = (String)jobTemp.getStatus().name();
+			Long jobId = jobTemp.getJobId();
+			String jobName = jobTemp.getJobDefinition().getName();
+        	DateTimeZone startTime = jobTemp.getScheduledStartTime();
+			orows+="<tr>\n"//
+			+ "<td bordercolor=\"#0081C6\" scope=\"row\">"+jobName +"</td>"//
+			+ "<td bordercolor=\"#0081C6\" scope=\"row\">"+jobId +"</td>"//		
+			+ "<td bordercolor=\"#0081C6\" scope=\"row\">"+jobStatus+"</td>";
+               		if(startTime != null)
+                     {
+                     	startTime.setTimeZone( TimeZone.getTimeZone("CST6CDT") );
+                     	orows+="<td bordercolor=\"#0081C6\" scope=\"row\">"+startTime.toFormattedString("EEE dd MMM yyyy HH:mm")+"</td></tr>";
+                     }
+                    else
+                    {
+                    	orows+="<td bordercolor=\"#0081C6\" scope=\"row\">Never</td></tr>";
+                    }
+        }
+        }	
+	}	
+	if(orows.equals("")){
+		orows+="\n<tr><td colspan=\"4\">No jobs in Overdue status</td></tr>";
+	}
+jcsJob.getJobParameterByName("OROWS").setInValueString(orows);
+jcsOut.println("Ending Overdue jobs");
+
+jcsOut.println("Starting Held Jobs");
+String hrows = "";
+String hquery = "select Job.* from Job where Job.Status IN ('H') order by Job.ScheduledStartTime desc";
+	for (Iterator it = jcsSession.executeObjectQuery(hquery, null); it.hasNext();)
+	{
+		Job jobTemp = (Job) it.next();
+        if(jobTemp  != null){
+        	if (jobTemp.getParentJob()==null){
+			//String jobDescription = (String)jobTemp.getDescription();
+			String jobStatus = (String)jobTemp.getStatus().name();
+			Long jobId = jobTemp.getJobId();
+			String jobName = jobTemp.getJobDefinition().getName();
+        	DateTimeZone startTime = jobTemp.getScheduledStartTime();
+			hrows+="<tr>\n"//
+			+ "<td bordercolor=\"#0081C6\" scope=\"row\">"+jobName +"</td>"//
+			+ "<td bordercolor=\"#0081C6\" scope=\"row\">"+jobId +"</td>"//		
+			+ "<td bordercolor=\"#0081C6\" scope=\"row\">"+jobStatus+"</td>";
+               		if(startTime != null)
+                     {
+                     	startTime.setTimeZone( TimeZone.getTimeZone("CST6CDT") );
+                     	hrows+="<td bordercolor=\"#0081C6\" scope=\"row\">"+startTime.toFormattedString("EEE dd MMM yyyy HH:mm")+"</td></tr>";
+                     }
+                    else
+                    {
+                    	hrows+="<td bordercolor=\"#0081C6\" scope=\"row\">Never</td></tr>";
+                    }
+        }
+        }
+	}	
+	if(hrows.equals("")){
+		hrows+="\n<tr><td colspan=\"4\">No jobs in Held status</td></tr>";
+	}
+jcsJob.getJobParameterByName("HROWS").setInValueString(hrows);
+jcsOut.println("Ending Held jobs");
+
+jcsOut.println("Getting High frequency Jobs");
+int sa=0,sO=0,so=0,sD=0,sJ=0,sq=0,sV=0,sH=0,sj=0,sG=0,sI=0,sM=0,sN=0,sn=0,s4=0,sF=0,s8=0,s6=0,sB=0,sQ=0,sR=0,sS=0,sT=0,su=0,sU=0,sW=0,sOth=0;
+int rJobs = 0,i=0;
+String jobDef [] = {"E1_V_MM_ME59N","E1_V_PR_ZPRE050_SCHD","E1_H_FI_CONFIRMP2PS","E1_H_FI_FIF009_BILLINGORDER","E1_H_FI_FIE163_BILLINGRETURNS","E1_H_FI_JUDGEP2PS","E1_H_FI_VIM_DP_DOC_STATUS_EXTR","E1_H_FI_VIM_VR_COLL_RPT","E1_H_HR_ECC_TO_EREC","E1_V_SM_OM212_LIST_EXPORT","E1_V_MDM_MDI001","E1_V_EM_MDI003_MDI022","E1_V_FI_CLEARINVOICES_FOAP","E1_V_FI_DOCLINK_FIE044","E1_V_FI_FDM_PROCESS_BUFFER","E1_V_FI_RELEASECREDITHOLD","E1_V_FI_VIM_LOCK_CLNUP","E1_V_HR_ECC_IDM_EMP_DATATRNSF","E1_V_PR_PO_CONF","E1_V_SM_SMI017","J1_V_HR_RCF_PERIODICAL_SERVICES","S1_V_PR_BBP_GET_STATUS_2","S1_V_PR_CLEAN_REQREQ_UP","E1_V_FI_SPLITINVOICES_1410","E1_V_SC_MFSTSAPTOSWMS_1050","E1_V_SC_PICKADJ_1050","E1_V_SC_TRANSROUTESWCIMMDT_1050","E1_V_SC_UPDTROUTEINFOINSAP_1050","E1_V_SC_TRANSMITROUTESNWC_1050","E1_V_FI_TRANSFERCREDITMEMO_FOAP","E1_H_FI_UPDATEPAYBEHAVIOUR","E1_V_SC_FORCED_RTN_1050","E1_V_SM_OMO_ORDFEEDBACK","E1_V_PR_ME59N_1050","E1_V_PR_ME59N_1165","E1_V_PR_ME59N_1305","E1_H_FI_JOBCHAIN_VIM_1","C1_V_SM_JC_ZSDSA064U_TREX_1050","C1_V_SM_JC_ZSDSA064U_TREX_1305","E1_V_SC_MFSTSAPTOSWMS_1165","E1_V_SC_PICKADJ_1165","E1_V_SC_PICKADJ_1305","E1_V_SC_TRANSROUTESWCIMMDT_1165","E1_V_SC_TRANSROUTESWCIMMDT_1305","E1_V_SC_UPDTROUTEINFOINSAP_1165","E1_V_SC_UPDTROUTEINFOINSAP_1305","E1_V_SC_TRANSMITROUTESNWC_1165","E1_V_SC_TRANSMITROUTESNWC_1305","E1_V_SC_FORCED_RTN_1165","E1_V_SC_FORCED_RTN_1305","E1_V_SC_PROCESS_RETURN_DISPOSITION_1050","E1_V_SC_PROCESS_RETURN_DISPOSITION_1165","E1_V_SC_PROCESS_RETURN_DISPOSITION_1305","E1_V_SC_BSCCPOPOSTING_1150","E1_V_SC_BSCCPOPOSTING_1395","E1_V_SC_FORCED_RTN_1150","E1_V_SC_FORCED_RTN_1395","E1_V_SC_MFSTSAPTOSWMS_1150","E1_V_SC_MFSTSAPTOSWMS_1395","E1_V_SC_PICKADJ_1150","E1_V_SC_PICKADJ_1395","E1_V_SC_TRANSMITROUTESNWC_1150","E1_V_SC_TRANSMITROUTESNWC_1395","E1_V_SC_TRANSROUTESWCIMMDT_1150","E1_V_SC_TRANSROUTESWCIMMDT_1395","E1_V_SC_UPDROUTEINFINSAPPO_1150","E1_V_SC_UPDROUTEINFINSAPPO_1395","E1_V_SC_UPDTROUTEINFOINSAP_1150","E1_V_SC_UPDTROUTEINFOINSAP_1395","E1_V_SC_PROCESS_RETURN_DISPOSITION_1150","E1_V_SC_PROCESS_RETURN_DISPOSITION_1395","E1_H_SM_LPLM_PRICING_1150","E1_H_SM_LPLM_PRICING_1395","C1_V_SM_ZSDSA064U_UPD_VIEW_1150","C1_V_SM_ZSDSA064U_UPD_VIEW_1395","E1_V_PR_ME59N_1150","E1_V_PR_ME59N_1395","E1_V_SC_UPDROUTEINFINSAPPO_1050","E1_V_SC_UPDROUTEINFINSAPPO_1305","E1_V_SC_UPDROUTEINFINSAPPO_1165","C1_V_SM_JC_ZSDSA064U_TREX_1395","C1_V_SM_JC_ZSDSA064U_TREX_1150","E1_V_SC_OPS_SCI003_PARA_1050","E1_V_SC_OPS_SCI003_PARA_1150","E1_V_SC_OPS_SCI003_PARA_1165","E1_V_SC_OPS_SCI003_PARA_1305","E1_V_SC_OPS_SCI003_PARA_1395","E1_V_SC_MFSTSAPTOSWMS_1305","E1_H_FI_JOBCHAIN_P2PS","C1_V_SM_JC_ZSDSA064U_TREX_1165","E1_H_SM_LPLM_PRICING_1050","E1_H_SM_LPLM_PRICING_1165","E1_H_SM_LPLM_PRICING_1305","E1_V_SC_BSCCPOPOSTING_1050","E1_V_SC_BSCCPOPOSTING_1165","E1_V_SC_BSCCPOPOSTING_1305"};
+String Sanity="";
+String rquery = "select Job.* from Job where Job.Status IN ('a','O','o','d','J','q','V','H','j','G','I','M','N','-','4','F','8','6','Q','B','R','S','T','u','U','W')";
+for (Iterator it = jcsSession.executeObjectQuery(rquery, null); it.hasNext();)
+{
+	Job jobTemp  = (Job)it.next();
+	 if(jobTemp  != null)
+		{ 
+		 for(i=0;i<jobDef.length;i++)
+		 {
+			 String jobStatus = (String)jobTemp.getStatus().name();
+			String jobName = jobTemp.getJobDefinition().getName();
+				if(jobName.equals(jobDef[i]) ){
+					//jcsOut.println(jobStatus);
+					rJobs++;
+					if(jobStatus.equals("Assigned")){sa++;}
+					else if(jobStatus.equals("Console")){sO++;}
+					else if(jobStatus.equals("Console Restart")){so++;}
+					else if(jobStatus.equals("Delayed")){sD++;}
+					else if(jobStatus.equals("Disabled")){sJ++;}
+					else if(jobStatus.equals("Dispatched")){sq++;}
+					else if(jobStatus.equals("Event Wait")){sV++;}
+					else if(jobStatus.equals("Held")){sH++;}
+					else if(jobStatus.equals("Ignored")){sj++;}
+					else if(jobStatus.equals("Killing")){sG++;}
+					else if(jobStatus.equals("Lock Wait")){sI++;}
+					else if(jobStatus.equals("Modified")){sM++;}
+					else if(jobStatus.equals("Never")){sN++;}
+					else if(jobStatus.equals("New")){sn++;}
+					else if(jobStatus.equals("On Change")){s4++;}
+					else if(jobStatus.equals("Overdue")){sF++;}
+					else if(jobStatus.equals("Post Running")){s8++;}
+					else if(jobStatus.equals("Pre Running")){s6++;}
+					else if(jobStatus.equals("Queue Held")){sB++;}
+					else if(jobStatus.equals("Queued")){sQ++;}
+					else if(jobStatus.equals("Running")){sR++;}
+					else if(jobStatus.equals("Scheduled")){sS++;}
+					else if(jobStatus.equals("Skipped")){sT++;}
+					else if(jobStatus.equals("Uncertain")){su++;}
+					else if(jobStatus.equals("Unknown")){sU++;}
+					else if(jobStatus.equals("Waiting")){sW++;}
+					else 
+						sOth++;	
+				}
+		 }
+
+}
+}
+if(sa>0)
+{
+	Sanity+="<tr>\n"//
+		+"<td bordercolor=\"#0081C6\" scope=\"row\">Assigned</td>"//
+		+ "<td bordercolor=\"#0081C6\" scope=\"row\">"+sa+"</td></tr>";	
+}
+if(sO>0)
+{
+	Sanity+=
+		"<tr>\n"//
+		+"<td bordercolor=\"#0081C6\" scope=\"row\">Console</td>"//
+		+ "<td bordercolor=\"#0081C6\" scope=\"row\">"+sO+"</td></tr>";	
+}
+if(so>0)
+{
+	Sanity+="<tr>\n"//
+		+"<td bordercolor=\"#0081C6\" scope=\"row\">Console Restart</td>"//
+		+ "<td bordercolor=\"#0081C6\" scope=\"row\">"+so+"</td></tr>";	
+}
+if(sD>0)
+{
+	Sanity+="<tr>\n"//
+		+"<td bordercolor=\"#0081C6\" scope=\"row\">Delayed</td>"//
+		+ "<td bordercolor=\"#0081C6\" scope=\"row\">"+sD+"</td></tr>";	
+}
+if(sJ>0)
+{
+	Sanity+="<tr>\n"//
+		+"<td bordercolor=\"#0081C6\" scope=\"row\">Disabled</td>"//
+		+ "<td bordercolor=\"#0081C6\" scope=\"row\">"+sJ+"</td></tr>";	
+}
+if(sq>0)
+{
+	Sanity+="<tr>\n"//
+		+"<td bordercolor=\"#0081C6\" scope=\"row\">Dispatched</td>"//
+		+ "<td bordercolor=\"#0081C6\" scope=\"row\">"+sq+"</td></tr>";	
+}
+if(sV>0)
+{
+	Sanity+="<tr>\n"//
+		+"<td bordercolor=\"#0081C6\" scope=\"row\">Event Wait</td>"//
+		+ "<td bordercolor=\"#0081C6\" scope=\"row\">"+sV+"</td></tr>";	
+}
+if(sH>0)
+{
+	Sanity+="<tr>\n"//
+		+"<td bordercolor=\"#0081C6\" scope=\"row\">Held</td>"//
+		+ "<td bordercolor=\"#0081C6\" scope=\"row\">"+sH+"</td></tr>";	
+}
+if(sj>0)
+{
+	Sanity+="<tr>\n"//
+		+"<td bordercolor=\"#0081C6\" scope=\"row\">Ignored</td>"//
+		+ "<td bordercolor=\"#0081C6\" scope=\"row\">"+sj+"</td></tr>";	
+}
+if(sG>0)
+{
+	Sanity+="<tr>\n"//
+		+"<td bordercolor=\"#0081C6\" scope=\"row\">Killing</td>"//
+		+ "<td bordercolor=\"#0081C6\" scope=\"row\">"+sG+"</td></tr>";	
+}
+if(sI>0)
+{
+	Sanity+="<tr>\n"//
+		+"<td bordercolor=\"#0081C6\" scope=\"row\">Lock Wait</td>"//
+		+ "<td bordercolor=\"#0081C6\" scope=\"row\">"+sI+"</td></tr>";	
+}
+if(sM>0)
+{
+	Sanity+="<tr>\n"//
+		+"<td bordercolor=\"#0081C6\" scope=\"row\">Modified</td>"//
+		+ "<td bordercolor=\"#0081C6\" scope=\"row\">"+sM+"</td></tr>";	
+}
+if(sN>0)
+{
+	Sanity+="<tr>\n"//
+		+"<td bordercolor=\"#0081C6\" scope=\"row\">Never</td>"//
+		+ "<td bordercolor=\"#0081C6\" scope=\"row\">"+sN+"</td></tr>";	
+}
+if(sn>0)
+{
+	Sanity+="<tr>\n"//
+		+"<td bordercolor=\"#0081C6\" scope=\"row\">New</td>"//
+		+ "<td bordercolor=\"#0081C6\" scope=\"row\">"+sn+"</td></tr>";	
+}
+if(s4>0)
+{
+	Sanity+="<tr>\n"//
+		+"<td bordercolor=\"#0081C6\" scope=\"row\">On Change</td>"//
+		+ "<td bordercolor=\"#0081C6\" scope=\"row\">"+s4+"</td></tr>";	
+}
+if(sF>0)
+{
+	Sanity+="<tr>\n"//
+		+"<td bordercolor=\"#0081C6\" scope=\"row\">Overdue</td>"//
+		+ "<td bordercolor=\"#0081C6\" scope=\"row\">"+sF+"</td></tr>";	
+}
+if(s8>0)
+{
+	Sanity+="<tr>\n"//
+		+"<td bordercolor=\"#0081C6\" scope=\"row\">Post Running</td>"//
+		+ "<td bordercolor=\"#0081C6\" scope=\"row\">"+s8+"</td></tr>";	
+}
+if(s6>0)
+{
+	Sanity+="<tr>\n"//
+		+"<td bordercolor=\"#0081C6\" scope=\"row\">Pre Running</td>"//
+		+ "<td bordercolor=\"#0081C6\" scope=\"row\">"+s6+"</td></tr>";	
+}
+if(sB>0)
+{
+	Sanity+="<tr>\n"//
+		+"<td bordercolor=\"#0081C6\" scope=\"row\">Queue Held</td>"//
+		+ "<td bordercolor=\"#0081C6\" scope=\"row\">"+sB+"</td></tr>";	
+}
+if(sQ>0)
+{
+	Sanity+="<tr>\n"//
+		+"<td bordercolor=\"#0081C6\" scope=\"row\">Queued</td>"//
+		+ "<td bordercolor=\"#0081C6\" scope=\"row\">"+sQ+"</td></tr>";	
+}
+if(sR>0)
+{
+	Sanity+="<tr>\n"//
+		+"<td bordercolor=\"#0081C6\" scope=\"row\">Running</td>"//
+		+ "<td bordercolor=\"#0081C6\" scope=\"row\">"+sR+"</td></tr>";	
+}
+if(sS>0)
+{
+	Sanity+="<tr>\n"//
+		+"<td bordercolor=\"#0081C6\" scope=\"row\">Scheduled</td>"//
+		+ "<td bordercolor=\"#0081C6\" scope=\"row\">"+sS+"</td></tr>";	
+}
+if(sT>0)
+{
+	Sanity+="<tr>\n"//
+		+"<td bordercolor=\"#0081C6\" scope=\"row\">Skipped</td>"//
+		+ "<td bordercolor=\"#0081C6\" scope=\"row\">"+sT+"</td></tr>";	
+}
+if(su>0)
+{
+	Sanity+="<tr>\n"//
+		+"<td bordercolor=\"#0081C6\" scope=\"row\">Uncertain</td>"//
+		+ "<td bordercolor=\"#0081C6\" scope=\"row\">"+su+"</td></tr>";	
+}
+if(sU>0)
+{
+	Sanity+="<tr>\n"//
+		+"<td bordercolor=\"#0081C6\" scope=\"row\">Unknown</td>"//
+		+ "<td bordercolor=\"#0081C6\" scope=\"row\">"+sU+"</td></tr>";	
+}
+if(sW>0)
+{
+	Sanity+="<tr>\n"//
+		+"<td bordercolor=\"#0081C6\" scope=\"row\">Waiting</td>"//
+		+ "<td bordercolor=\"#0081C6\" scope=\"row\">"+sW+"</td></tr>";	
+}
+if(sOth>0)
+{
+	Sanity+="<tr>\n"//
+		+"<td bordercolor=\"#0081C6\" scope=\"row\">Other</td>"//
+		+ "<td bordercolor=\"#0081C6\" scope=\"row\">"+sOth+"</td></tr>";	
+}
+Sanity+="<tr>\n"//
+	+"<td bordercolor=\"#0081C6\" scope=\"row\">Total</td>"//
+	+ "<td bordercolor=\"#0081C6\" scope=\"row\">"+rJobs +"</td></tr>";	
+
+
+jcsJob.getJobParameterByName("Sanity").setInValueString(Sanity);
+jcsOut.println("Ending High frequency Jobs");
+
+jcsOut.println("Getting operator messages");
+String sql = "select OperatorMessage.* from OperatorMessage";
+String omsg="";
+int flag=0,omscount=0;
+for (Iterator it = jcsSession.executeObjectQuery(sql, null); it.hasNext(); )
+{
+   OperatorMessage om = (OperatorMessage) it.next();
+   //operator messages with required replies but not replied to
+   if ( om.getReplyStatus().name() != null && om.getReplyStatus().name().equals("Required") && om.getReply() == null)
+   {
+	   omscount++;
+
+   }
+}
+if (omscount!=0)
+{
+	   omsg+="There are" +omscount +" Operator Messages awaiting a reply.";
+}
+else
+	   omsg+="No Operator Messages awaiting a reply.";
+jcsJob.getJobParameterByName("OM").setInValueString(omsg);
+jcsOut.println("Ending Operator Messages");
+
+jcsOut.println("Checking Process Servers");
+String psrows = "";
+String psquery = "select ProcessServer.* from ProcessServer where ProcessServer.Status <> 'R'";
+	for (Iterator it = jcsSession.executeObjectQuery(psquery, null); it.hasNext();)
+	{
+		ProcessServer proc = (ProcessServer) it.next();
+        if(proc  != null){
+			String procName = (String)proc.getName();
+			String procStatus = (String)proc.getStatus().name();               
+			psrows+="<tr>\n"//
+			+ "<td bordercolor=\"#0081C6\" scope=\"row\">"+procName +"</td>"//	
+			+ "<td bordercolor=\"#0081C6\" scope=\"row\">"+procStatus+"</td>";
+        	}
+
+	}
+	if(psrows.equals("")){
+		psrows+="\n<tr><td colspan=\"4\">All the process servers are running fine.</td></tr>";
+	}
+jcsJob.getJobParameterByName("PSROWS").setInValueString(psrows);
+jcsOut.println("Process servers checked");
+
+jcsOut.println("Checking Queues Status");
+String Qrows = "";
+String Qquery = "select Queue.* from Queue where Queue.Name <> 'System'";
+	for (Iterator it = jcsSession.executeObjectQuery(Qquery, null); it.hasNext();)
+	{
+			Queue que = (Queue) it.next();
+			if(que != null){
+			String qName = (String)que.getName();
+			String qStatus = (String)que.getStatus().name();      
+			if(!qStatus.equals("Open"))
+			{
+				Qrows+="<tr>\n"//
+					+ "<td bordercolor=\"#0081C6\" scope=\"row\">"+qName +"</td>"//	
+					+ "<td bordercolor=\"#0081C6\" scope=\"row\">"+qStatus+"</td>";
+			}
+
+		}
+
+	}
+	if(Qrows.equals("")){
+		Qrows+="\n<tr><td colspan=\"4\">All the Queues are in Open Status.</td></tr>";
+	}
+jcsJob.getJobParameterByName("QROWS").setInValueString(Qrows);
+jcsOut.println("Queues checked");
+
+}
