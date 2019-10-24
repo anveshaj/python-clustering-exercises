@@ -1,0 +1,37 @@
+from __future__ import print_function
+import socket;
+import boto3
+client = boto3.client('cloudwatch')
+host = '<<give your host address>>'
+ip = socket.gethostbyname(host)
+port = 10180
+stat = 'Status'
+metricName = '<<give your metric name>>'
+testTimeout = 10.0 #timeout in seconds
+def lambda_handler(event, context):
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.settimeout(testTimeout)
+    result = sock.connect_ex((ip,port))
+    if result == 0:
+        writeMetric(host,stat,1.0)
+        print("Port is open")
+    else:
+        writeMetric(host,stat,0.0)
+        print("Port is not open")
+def writeMetric(ip,port,value):
+    response = client.put_metric_data(
+        Namespace= metricName,
+        MetricData=[
+            {
+                'MetricName': str(host),
+                'Dimensions': [
+                    {
+                        'Name': str(host),
+                        'Value': 'Status'
+                    },
+                ],
+                'Value': value,
+                'Unit': 'None'
+            },
+        ]
+    )
